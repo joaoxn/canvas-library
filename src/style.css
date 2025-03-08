@@ -1,0 +1,28 @@
+* {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
+
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    margin-bottom: 2rem;
+}
+
+body {
+    min-height: 100vh;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    background-color: rgb(27, 37, 74);
+}
+
+#game {
+    background-color: rgb(26, 28, 32);
+    
+    border: 2px solid rgb(255, 255, 255);
+    border-radius: 15px;
+}
