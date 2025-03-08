@@ -170,8 +170,14 @@ class UIElement extends Box {
             element.draw();
     }
 
-    static addListeners() {
-        document.addEventListener('click', (event) => {
+    /**
+     * A static method that returns a callback function to handle click events.
+     * This callback function invokes the clickCallback of every box that the mouse hits with such callback defined.
+     *
+     * @returns {(event: MouseEvent) => void} - A callback function that handles click events.
+     */
+    static getClickCallback() {
+        return (event: MouseEvent) => {
             const rect = canvas.getBoundingClientRect();
             const position = new Vector(event.x - rect.x, event.y - rect.y);
 
@@ -181,13 +187,32 @@ class UIElement extends Box {
             for (const element of this.elements)
                 if (element.hit(position) && element.clickCallback)
                     element.clickCallback(event);
-        })
+        }
+    }
 
-        document.addEventListener('keydown', (event) => {
+    /**
+     * A static method that returns a callback function to handle keydown events.
+     * This callback function iterates through all UIElement instances and invokes their keydownCallback if defined.
+     *
+     * @returns {(event: KeyboardEvent) => void} - A callback function that handles keydown events.
+     */
+    static getKeydownCallback() {
+        return (event: KeyboardEvent) => {
             for (const element of this.elements)
                 if (element.keydownCallback)
                     element.keydownCallback(event);
-        })
+        }
+    }
+
+
+    static addListeners() {
+        document.addEventListener('click', this.getClickCallback());
+        document.addEventListener('keydown', this.getKeydownCallback());
+    }
+
+    static removeListeners() {
+        document.removeEventListener('click', this.getClickCallback());
+        document.removeEventListener('keydown', this.getKeydownCallback());
     }
 }
 
@@ -264,7 +289,7 @@ UIElement.addListeners();
 const square = new Movable(10, canvas.height - 100, 100, 100);
 
 square.keydownCallback = (event) => {
-    if (event.key !== ' ') return;
+    if (event.key !== ' ' || square.acceleration.y !== 0) return;
     square.velocity.y = -20;
     square.acceleration.y = 1;
 }
