@@ -2,8 +2,8 @@ export { initializeCanvas, getWrapper, Vector, Box, Style, UIElement, Movable };
 class CanvasWrapper {
     canvas;
     ctx;
-    constructor(canvas) {
-        this.canvas = typeof canvas !== 'string' ? canvas : document.getElementById(canvas);
+    constructor(canvasOrSelector) {
+        this.canvas = typeof canvasOrSelector !== 'string' ? canvasOrSelector : document.querySelector(canvasOrSelector);
         if (!this.canvas) {
             throw new Error("Canvas element not found.");
         }
@@ -20,8 +20,8 @@ function getWrapper() {
         throw new Error("canvasWrapper was not initialized. Please call initializeCanvas(...) before using the library.");
     return canvasWrapper;
 }
-function initializeCanvas(canvasOrId) {
-    canvasWrapper = new CanvasWrapper(canvasOrId);
+function initializeCanvas(canvasOrSelector) {
+    canvasWrapper = new CanvasWrapper(canvasOrSelector);
 }
 class Vector {
     x;
@@ -245,7 +245,7 @@ class Movable extends UIElement {
         this.y += this.velocity.y;
         this.velocity.add(this.acceleration);
     }
-    static tick() {
+    static tickAll() {
         for (const element of this.elements)
             element.tick();
     }

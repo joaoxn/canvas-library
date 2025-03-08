@@ -45,7 +45,7 @@ function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     UIElement.drawAll();
     if (!frozen) {
-        Movable.tick();
+        Movable.tickAll();
         if (i % 50 == 0)
             new Obstacle(50, 80);
     }

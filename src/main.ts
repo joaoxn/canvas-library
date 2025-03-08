@@ -61,7 +61,7 @@ function loop() {
 
     UIElement.drawAll();
     if (!frozen) {
-        Movable.tick();
+        Movable.tickAll();
         if (i % 50 == 0)
             new Obstacle(50, 80);
     }

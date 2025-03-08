@@ -6,8 +6,8 @@ class CanvasWrapper {
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
 
-    constructor(canvas: HTMLCanvasElement | string) {
-        this.canvas = typeof canvas !== 'string' ? canvas : document.getElementById(canvas) as HTMLCanvasElement;
+    constructor(canvasOrSelector: HTMLCanvasElement | string) {
+        this.canvas = typeof canvasOrSelector !== 'string' ? canvasOrSelector : document.querySelector(canvasOrSelector) as HTMLCanvasElement;
         if (!this.canvas) {
             throw new Error("Canvas element not found.");
         }
@@ -27,8 +27,8 @@ function getWrapper() {
     return canvasWrapper;
 }
 
-function initializeCanvas(canvasOrId: HTMLCanvasElement | string) {
-    canvasWrapper = new CanvasWrapper(canvasOrId);
+function initializeCanvas(canvasOrSelector: HTMLCanvasElement | string) {
+    canvasWrapper = new CanvasWrapper(canvasOrSelector);
 }
 
 interface Shape {
@@ -309,7 +309,7 @@ class Movable extends UIElement {
         this.velocity.add(this.acceleration);
     }
 
-    static tick() {
+    static tickAll() {
         for (const element of this.elements)
             element.tick();
     }
