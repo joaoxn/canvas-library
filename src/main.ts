@@ -2,7 +2,7 @@ import {
     initializeCanvas, getWrapper, Shape, Vector, Box, Style, UIElement, Movable 
 } from "./canvas-library.js";
 
-initializeCanvas("game");
+initializeCanvas("#game");
 
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
@@ -58,14 +58,12 @@ let i = 0;
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-
     UIElement.drawAll();
     if (!frozen) {
         Movable.tickAll();
         if (i % 50 == 0)
             new Obstacle(50, 80);
     }
-
 
     if (frozen) {
         ctx.fillStyle = "#bbbbbb88";

@@ -1,5 +1,5 @@
 import { initializeCanvas, getWrapper, Vector, Style, UIElement, Movable } from "./canvas-library.js";
-initializeCanvas("game");
+initializeCanvas("#game");
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
 UIElement.addListeners();
