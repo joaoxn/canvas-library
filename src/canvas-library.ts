@@ -69,6 +69,10 @@ class Vector {
         return this;
     }
 
+    equals(vector: Vector) {
+        return this.x === vector.x && this.y === vector.y;
+    }
+
     insideCanvas(): boolean {
         return Box.fromHTML(getWrapper().canvas)
             .hit(new Vector(this.x, this.y));
