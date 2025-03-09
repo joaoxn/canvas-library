@@ -10,7 +10,6 @@
 ## Incomplete implementations
 
 ## Bug Fixes
-- Change collisionCallback caller from Movable.tick() to always check, because even if `this.collisionCallback` is undefined, the other collided movable might have a callback;
 
 ## DONE
 - Library logs disabled by default. Pass `true` as `enableLogs` parameter in init(...) to enable logging;
@@ -18,3 +17,4 @@
 - Delete method for UIElements;
 - Deleted property for elements with delete() method;
 - Fixed tickAll skipping a Movable when one is deleted;
+- Change collisionCallback caller from Movable.tick() to always check, because even if `this.collisionCallback` is undefined, the other collided movable might have a callback;

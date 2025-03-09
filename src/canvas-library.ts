@@ -324,14 +324,13 @@ class Movable extends UIElement {
             return;
         }
 
-        if (this.collisionCallback) {
-            const collidedElements = this.collided();
+        const collidedElements = this.collided();
 
-            for (const other of collidedElements) {
+        for (const other of collidedElements) {
+            if (this.collisionCallback)
                 this.collisionCallback(this, other);
-                if (other.collisionCallback)
-                    other.collisionCallback(other, this);
-            }
+            if (other.collisionCallback)
+                other.collisionCallback(other, this);
         }
 
         if (this.tickCallback)
