@@ -1,62 +1,55 @@
-import { initializeCanvas, getWrapper, Vector, Style, UIElement, Movable } from "./canvas-library.js";
+import { initializeCanvas, getWrapper, UIElement, Movable } from "./canvas-library.js";
 initializeCanvas("#game");
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
-UIElement.addListeners();
-const square = new Movable(20, getWrapper().canvas.height - 100, 100, 100);
-square.keydownCallback = (event) => {
-    if (event.key !== ' ' || square.acceleration.y !== 0)
-        return;
-    square.velocity.y = -20;
-    square.acceleration.y = 1;
-};
-square.tickCallback = (movable) => {
-    if (movable.y + movable.height <= canvas.height)
-        return;
-    movable.y = canvas.height - movable.height;
-    movable.velocity.y = 0;
-    movable.acceleration.y = 0;
-};
+const GRAVITY = 0.6;
 let frozen = false;
-class Obstacle extends Movable {
-    velocity = new Vector(-10, 0);
-    deleteIfOutOfBounds = true;
-    static defaultStyle = new Style();
-    static {
-        this.defaultStyle.background = "red";
+UIElement.addListeners();
+const player = new Movable(25, (canvas.height - 30) * 30 / 100, 50, 30);
+player.acceleration.y = GRAVITY;
+player.deleteIfOutOfBounds = false;
+const floor = new Movable(0, canvas.height - 10, canvas.width, 10);
+player.keydownCallback = (event) => {
+    const jumpKeys = [' ', 'ArrowUp', 'W'];
+    if (jumpKeys.includes(event.key)) {
+        player.velocity.y = -8;
     }
-    constructor(width, height, style) {
-        style = style ?? Obstacle.defaultStyle;
-        super(canvas.width, canvas.height - height, width, height, style);
+};
+player.collisionCallback = (player, other) => {
+    frozen = true;
+};
+class Pipe extends Movable {
+    constructor(onTop, height) {
+        const x = canvas.width;
+        const y = onTop ? 0 : canvas.height - height;
+        const width = 50;
+        super(x, y, width, height);
+        this.velocity.x = -5;
+        this.deleteIfOutOfBounds = true;
     }
-    collisionCallback = (element, other) => {
-        if (other !== square)
-            return;
-        frozen = true;
+    tickCallback = (pipe) => {
+        console.log(pipe);
     };
 }
-let reloadListener = document.addEventListener('keydown', (event) => {
-    if (frozen && event.key === ' ' || event.key === 'r') {
-        location.reload();
-    }
-});
+function newPipes(gapHeight, yGap) {
+    const topPipe = new Pipe(true, yGap);
+    const bottomPipe = new Pipe(false, canvas.height - (gapHeight + yGap));
+    return [topPipe, bottomPipe];
+}
 let i = 0;
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     UIElement.drawAll();
     if (!frozen) {
         Movable.tickAll();
-        if (i % 50 == 0)
-            new Obstacle(50, 80);
+        if (i % 130 == 0) {
+            const gapHeight = 150;
+            let yGap = Math.random() * (canvas.height - gapHeight + 1);
+            newPipes(gapHeight, yGap);
+        }
     }
     if (frozen) {
-        ctx.fillStyle = "#bbbbbb88";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "white";
-        ctx.font = "60px Arial";
-        ctx.fillText("Game Over", canvas.width / 2 - 150, canvas.height / 2);
-        ctx.font = "30px Arial";
-        ctx.fillText("Press R or Space to Restart", canvas.width / 2 - 200, canvas.height / 2 + 100);
+        // TODO Game Over
     }
     i++;
     requestAnimationFrame(loop);
