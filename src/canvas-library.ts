@@ -314,6 +314,10 @@ class Movable extends UIElement {
         return collidedElements;
     }
 
+    /**
+     * Updates the state of the element.
+     * Checks for deletion conditions, checks collision, executes tickCallback and then calculates movement.
+     */
     tick() {
         if (this.deleteIfOutOfBounds && this.insideCanvas() == -1) {
             this.delete();
@@ -338,8 +342,14 @@ class Movable extends UIElement {
         this.velocity.add(this.acceleration);
     }
 
+    /**
+     * Iterates over all Movable elements and invokes their tick method.
+     * This method is responsible for updating the state of each Movable element,
+     * such as position and handling collisions.
+     */
     static tickAll() {
         for (const element of this.elements)
             element.tick();
     }
+
 }
