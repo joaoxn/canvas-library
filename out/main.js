@@ -42,7 +42,7 @@ function loop() {
     UIElement.drawAll();
     if (!frozen) {
         Movable.tickAll();
-        if (i % 130 == 0) {
+        if (i % 60 == 0) {
             const gapHeight = 150;
             let yGap = Math.random() * (canvas.height - gapHeight + 1);
             newPipes(gapHeight, yGap);

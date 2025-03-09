@@ -278,7 +278,8 @@ class Movable extends UIElement {
      * such as position and handling collisions.
      */
     static tickAll() {
-        for (const element of this.elements)
+        const elementsCopy = [...this.elements];
+        for (const element of elementsCopy)
             element.tick();
     }
 }
