@@ -10,7 +10,7 @@ class CanvasWrapper {
     constructor(canvasOrSelector: HTMLCanvasElement | string, logsEnabled: boolean) {
         const canvas = typeof canvasOrSelector !== 'string' ? 
             canvasOrSelector : document.querySelector(canvasOrSelector);
-
+            
         if (!canvas || !(canvas instanceof HTMLCanvasElement))
             throw new Error("Canvas element not found. Given querySelector may be incorrect or a canvas with such selector does not exist.");
         this.canvas = canvas;
@@ -180,6 +180,7 @@ class UIElement extends Box {
     style: Style;
     clickCallback?: (event: MouseEvent) => void;
     keydownCallback?: (event: KeyboardEvent) => void;
+    protected deleted = false;
 
     static elements: UIElement[] = [];
 
@@ -189,6 +190,21 @@ class UIElement extends Box {
 
         UIElement.elements.push(this);
         log(this, "was ADDED to the list of drawed elements");
+    }
+
+    isDeleted(): boolean {
+        return this.deleted;
+    }
+
+    delete() {
+        const classes = [UIElement];
+
+        for (const staticClass of classes) {
+            const idx = staticClass.elements.indexOf(this);
+            staticClass.elements.splice(idx, 1);
+        }
+        this.deleted = true;
+        log(this, "was REMOVED from context");
     }
 
     draw() {
@@ -283,6 +299,7 @@ class Movable extends UIElement {
             const idx = staticClass.elements.indexOf(this);
             staticClass.elements.splice(idx, 1);
         }
+        this.deleted = true;
         log(this, "was REMOVED from context");
     }
 

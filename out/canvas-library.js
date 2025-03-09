@@ -142,12 +142,25 @@ class UIElement extends Box {
     style;
     clickCallback;
     keydownCallback;
+    deleted = false;
     static elements = [];
     constructor(x, y, width, height, style = new Style()) {
         super(x, y, width, height);
         this.style = style;
         UIElement.elements.push(this);
         log(this, "was ADDED to the list of drawed elements");
+    }
+    isDeleted() {
+        return this.deleted;
+    }
+    delete() {
+        const classes = [UIElement];
+        for (const staticClass of classes) {
+            const idx = staticClass.elements.indexOf(this);
+            staticClass.elements.splice(idx, 1);
+        }
+        this.deleted = true;
+        log(this, "was REMOVED from context");
     }
     draw() {
         getWrapper().ctx.fillStyle = this.style.background;
@@ -223,6 +236,7 @@ class Movable extends UIElement {
             const idx = staticClass.elements.indexOf(this);
             staticClass.elements.splice(idx, 1);
         }
+        this.deleted = true;
         log(this, "was REMOVED from context");
     }
     collided() {
