@@ -1,34 +1,45 @@
 export {
-    initializeCanvas, getWrapper, Shape, Vector, Box, Style, UIElement, Movable
+    init, getWrapper, Shape, Vector, Box, Style, UIElement, Movable
 }
 
 class CanvasWrapper {
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
+    logsEnabled: boolean;
 
-    constructor(canvasOrSelector: HTMLCanvasElement | string) {
-        this.canvas = typeof canvasOrSelector !== 'string' ? canvasOrSelector : document.querySelector(canvasOrSelector) as HTMLCanvasElement;
-        if (!this.canvas) {
-            throw new Error("Canvas element not found.");
-        }
+    constructor(canvasOrSelector: HTMLCanvasElement | string, logsEnabled: boolean) {
+        const canvas = typeof canvasOrSelector !== 'string' ? 
+            canvasOrSelector : document.querySelector(canvasOrSelector);
+
+        if (!canvas || !(canvas instanceof HTMLCanvasElement))
+            throw new Error("Canvas element not found. Given querySelector may be incorrect or a canvas with such selector does not exist.");
+        this.canvas = canvas;
 
         const ctx = this.canvas.getContext('2d');
-        if (!ctx) {
-            throw new Error("Failed to get 2D context. The canvas may not be supported or is not attached to the DOM.");
-        }
+        if (!ctx)
+            throw new Error("Failed to get 2D context. Canvas may not be supported or is not attached to the DOM.");
         this.ctx = ctx;
+        
+        this.logsEnabled = logsEnabled;
     }
 }
 
 let canvasWrapper: CanvasWrapper | undefined;
 
 function getWrapper() {
-    if (!canvasWrapper) throw new Error("canvasWrapper was not initialized. Please call initializeCanvas(...) before using the library.")
+    if (!canvasWrapper) 
+        throw new Error("canvasWrapper was not initialized. Please call init(...) before using the library.");
     return canvasWrapper;
 }
 
-function initializeCanvas(canvasOrSelector: HTMLCanvasElement | string) {
-    canvasWrapper = new CanvasWrapper(canvasOrSelector);
+function init(canvasOrSelector: HTMLCanvasElement | string, enableLogs = false) {
+    canvasWrapper = new CanvasWrapper(canvasOrSelector, enableLogs);
+}
+
+function log(...message: any[]): boolean {
+    if (!getWrapper().logsEnabled) return false;
+    console.log(message);
+    return true;
 }
 
 interface Shape {
@@ -59,7 +70,8 @@ class Vector {
     }
 
     insideCanvas(): boolean {
-        return Box.fromHTML(getWrapper().canvas).hit(new Vector(this.x, this.y))
+        return Box.fromHTML(getWrapper().canvas)
+            .hit(new Vector(this.x, this.y));
     }
 
     static add(vector1: Vector, vector2: Vector) {
@@ -176,7 +188,7 @@ class UIElement extends Box {
         this.style = style;
 
         UIElement.elements.push(this);
-        console.log(this, "was ADDED to the list of drawed elements")
+        log(this, "was ADDED to the list of drawed elements");
     }
 
     draw() {
@@ -189,7 +201,7 @@ class UIElement extends Box {
         if (this.style.text) {
             const fontSize = this.style.fontSize ?? this.height;
             getWrapper().ctx.font = fontSize + "px " + this.style.fontFamily;
-            const sizeDiff = this.height - fontSize
+            const sizeDiff = this.height - fontSize;
 
             getWrapper().ctx.fillText(this.style.text, this.x, this.y + this.height - sizeDiff / 2, this.width);
         }
@@ -271,7 +283,7 @@ class Movable extends UIElement {
             const idx = staticClass.elements.indexOf(this);
             staticClass.elements.splice(idx, 1);
         }
-        console.log(this, "was REMOVED from context")
+        log(this, "was REMOVED from context");
     }
 
     collided(): Movable[] {

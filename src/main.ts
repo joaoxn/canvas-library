@@ -1,8 +1,8 @@
 import { 
-    initializeCanvas, getWrapper, Shape, Vector, Box, Style, UIElement, Movable 
+    init, getWrapper, Shape, Vector, Box, Style, UIElement, Movable 
 } from "./canvas-library.js";
 
-initializeCanvas("#game");
+init("#game");
 
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;

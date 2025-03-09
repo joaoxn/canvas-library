@@ -1,27 +1,35 @@
-export { initializeCanvas, getWrapper, Vector, Box, Style, UIElement, Movable };
+export { init, getWrapper, Vector, Box, Style, UIElement, Movable };
 class CanvasWrapper {
     canvas;
     ctx;
-    constructor(canvasOrSelector) {
-        this.canvas = typeof canvasOrSelector !== 'string' ? canvasOrSelector : document.querySelector(canvasOrSelector);
-        if (!this.canvas) {
-            throw new Error("Canvas element not found.");
-        }
+    logsEnabled;
+    constructor(canvasOrSelector, logsEnabled) {
+        const canvas = typeof canvasOrSelector !== 'string' ?
+            canvasOrSelector : document.querySelector(canvasOrSelector);
+        if (!canvas || !(canvas instanceof HTMLCanvasElement))
+            throw new Error("Canvas element not found. Given querySelector may be incorrect or a canvas with such selector does not exist.");
+        this.canvas = canvas;
         const ctx = this.canvas.getContext('2d');
-        if (!ctx) {
-            throw new Error("Failed to get 2D context. The canvas may not be supported or is not attached to the DOM.");
-        }
+        if (!ctx)
+            throw new Error("Failed to get 2D context. Canvas may not be supported or is not attached to the DOM.");
         this.ctx = ctx;
+        this.logsEnabled = logsEnabled;
     }
 }
 let canvasWrapper;
 function getWrapper() {
     if (!canvasWrapper)
-        throw new Error("canvasWrapper was not initialized. Please call initializeCanvas(...) before using the library.");
+        throw new Error("canvasWrapper was not initialized. Please call init(...) before using the library.");
     return canvasWrapper;
 }
-function initializeCanvas(canvasOrSelector) {
-    canvasWrapper = new CanvasWrapper(canvasOrSelector);
+function init(canvasOrSelector, enableLogs = false) {
+    canvasWrapper = new CanvasWrapper(canvasOrSelector, enableLogs);
+}
+function log(...message) {
+    if (!getWrapper().logsEnabled)
+        return false;
+    console.log(message);
+    return true;
 }
 class Vector {
     x;
@@ -41,7 +49,8 @@ class Vector {
         return this;
     }
     insideCanvas() {
-        return Box.fromHTML(getWrapper().canvas).hit(new Vector(this.x, this.y));
+        return Box.fromHTML(getWrapper().canvas)
+            .hit(new Vector(this.x, this.y));
     }
     static add(vector1, vector2) {
         return new Vector(vector1.x + vector2.x, vector1.y + vector2.y);
@@ -138,7 +147,7 @@ class UIElement extends Box {
         super(x, y, width, height);
         this.style = style;
         UIElement.elements.push(this);
-        console.log(this, "was ADDED to the list of drawed elements");
+        log(this, "was ADDED to the list of drawed elements");
     }
     draw() {
         getWrapper().ctx.fillStyle = this.style.background;
@@ -214,7 +223,7 @@ class Movable extends UIElement {
             const idx = staticClass.elements.indexOf(this);
             staticClass.elements.splice(idx, 1);
         }
-        console.log(this, "was REMOVED from context");
+        log(this, "was REMOVED from context");
     }
     collided() {
         const collidedElements = [];

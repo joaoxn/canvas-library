@@ -1,5 +1,5 @@
-import { initializeCanvas, getWrapper, UIElement, Movable } from "./canvas-library.js";
-initializeCanvas("#game");
+import { init, getWrapper, UIElement, Movable } from "./canvas-library.js";
+init("#game");
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
 const GRAVITY = 0.6;
