@@ -4,6 +4,8 @@
 
 - Custom event callbacks: Let user define functions for all wanted events. Event listeners are added dynamically;
 - Delta-time and tick loading non-dependant on fps;
+- Tickable interface for any time-based class;
+- Tween support for boxes or UIElements (Util class);
 
 ## Incomplete implementations
 
