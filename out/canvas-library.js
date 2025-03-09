@@ -255,6 +255,7 @@ class Movable extends UIElement {
     /**
      * Updates the state of the element.
      * Checks for deletion conditions, checks collision, executes tickCallback and then calculates movement.
+     * Callbacks are called in this order: collisionCallback (if collided) -> tickCallback -> movement calculations.
      */
     tick() {
         if (this.deleteIfOutOfBounds && this.insideCanvas() == -1) {
