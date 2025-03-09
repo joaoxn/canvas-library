@@ -1,27 +1,35 @@
-export { initializeCanvas, getWrapper, Vector, Box, Style, UIElement, Movable };
+export { init, getWrapper, Vector, Box, Style, UIElement, Movable };
 class CanvasWrapper {
     canvas;
     ctx;
-    constructor(canvasOrSelector) {
-        this.canvas = typeof canvasOrSelector !== 'string' ? canvasOrSelector : document.querySelector(canvasOrSelector);
-        if (!this.canvas) {
-            throw new Error("Canvas element not found.");
-        }
+    logsEnabled;
+    constructor(canvasOrSelector, logsEnabled) {
+        const canvas = typeof canvasOrSelector !== 'string' ?
+            canvasOrSelector : document.querySelector(canvasOrSelector);
+        if (!canvas || !(canvas instanceof HTMLCanvasElement))
+            throw new Error("Canvas element not found. Given querySelector may be incorrect or a canvas with such selector does not exist.");
+        this.canvas = canvas;
         const ctx = this.canvas.getContext('2d');
-        if (!ctx) {
-            throw new Error("Failed to get 2D context. The canvas may not be supported or is not attached to the DOM.");
-        }
+        if (!ctx)
+            throw new Error("Failed to get 2D context. Canvas may not be supported or is not attached to the DOM.");
         this.ctx = ctx;
+        this.logsEnabled = logsEnabled;
     }
 }
 let canvasWrapper;
 function getWrapper() {
     if (!canvasWrapper)
-        throw new Error("canvasWrapper was not initialized. Please call initializeCanvas(...) before using the library.");
+        throw new Error("canvasWrapper was not initialized. Please call init(...) before using the library.");
     return canvasWrapper;
 }
-function initializeCanvas(canvasOrSelector) {
-    canvasWrapper = new CanvasWrapper(canvasOrSelector);
+function init(canvasOrSelector, enableLogs = false) {
+    canvasWrapper = new CanvasWrapper(canvasOrSelector, enableLogs);
+}
+function log(...message) {
+    if (!getWrapper().logsEnabled)
+        return false;
+    console.log(message);
+    return true;
 }
 class Vector {
     x;
@@ -40,8 +48,12 @@ class Vector {
         this.y *= scalar;
         return this;
     }
+    equals(vector) {
+        return this.x === vector.x && this.y === vector.y;
+    }
     insideCanvas() {
-        return Box.fromHTML(getWrapper().canvas).hit(new Vector(this.x, this.y));
+        return Box.fromHTML(getWrapper().canvas)
+            .hit(new Vector(this.x, this.y));
     }
     static add(vector1, vector2) {
         return new Vector(vector1.x + vector2.x, vector1.y + vector2.y);
@@ -133,12 +145,25 @@ class UIElement extends Box {
     style;
     clickCallback;
     keydownCallback;
+    deleted = false;
     static elements = [];
     constructor(x, y, width, height, style = new Style()) {
         super(x, y, width, height);
         this.style = style;
         UIElement.elements.push(this);
-        console.log(this, "was ADDED to the list of drawed elements");
+        log(this, "was ADDED to the list of drawed elements");
+    }
+    isDeleted() {
+        return this.deleted;
+    }
+    delete() {
+        const classes = [UIElement];
+        for (const staticClass of classes) {
+            const idx = staticClass.elements.indexOf(this);
+            staticClass.elements.splice(idx, 1);
+        }
+        this.deleted = true;
+        log(this, "was REMOVED from context");
     }
     draw() {
         getWrapper().ctx.fillStyle = this.style.background;
@@ -214,7 +239,8 @@ class Movable extends UIElement {
             const idx = staticClass.elements.indexOf(this);
             staticClass.elements.splice(idx, 1);
         }
-        console.log(this, "was REMOVED from context");
+        this.deleted = true;
+        log(this, "was REMOVED from context");
     }
     collided() {
         const collidedElements = [];
@@ -226,18 +252,22 @@ class Movable extends UIElement {
         }
         return collidedElements;
     }
+    /**
+     * Updates the state of the element.
+     * Checks for deletion conditions, checks collision, executes tickCallback and then calculates movement.
+     * Callbacks are called in this order: collisionCallback (if collided) -> tickCallback -> movement calculations.
+     */
     tick() {
         if (this.deleteIfOutOfBounds && this.insideCanvas() == -1) {
             this.delete();
             return;
         }
-        if (this.collisionCallback) {
-            const collidedElements = this.collided();
-            for (const other of collidedElements) {
+        const collidedElements = this.collided();
+        for (const other of collidedElements) {
+            if (this.collisionCallback)
                 this.collisionCallback(this, other);
-                if (other.collisionCallback)
-                    other.collisionCallback(other, this);
-            }
+            if (other.collisionCallback)
+                other.collisionCallback(other, this);
         }
         if (this.tickCallback)
             this.tickCallback(this);
@@ -245,8 +275,14 @@ class Movable extends UIElement {
         this.y += this.velocity.y;
         this.velocity.add(this.acceleration);
     }
+    /**
+     * Iterates over all Movable elements and invokes their tick method.
+     * This method is responsible for updating the state of each Movable element,
+     * such as position and handling collisions.
+     */
     static tickAll() {
-        for (const element of this.elements)
+        const elementsCopy = [...this.elements];
+        for (const element of elementsCopy)
             element.tick();
     }
 }

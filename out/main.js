@@ -1,5 +1,5 @@
-import { initializeCanvas, getWrapper, UIElement, Movable } from "./canvas-library.js";
-initializeCanvas("#game");
+import { init, getWrapper, UIElement, Movable } from "./canvas-library.js";
+init("#game");
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
 const GRAVITY = 0.6;
@@ -42,7 +42,7 @@ function loop() {
     UIElement.drawAll();
     if (!frozen) {
         Movable.tickAll();
-        if (i % 130 == 0) {
+        if (i % 60 == 0) {
             const gapHeight = 150;
             let yGap = Math.random() * (canvas.height - gapHeight + 1);
             newPipes(gapHeight, yGap);
