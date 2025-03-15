@@ -8,6 +8,7 @@
 - Tween support for boxes or UIElements (Util class);
 - Vector.normalize() method;
 - Dot product for Vector class;
+- HTMLDisplayElement class for HTML elements positioned inside the canvas;
 
 ## Incomplete implementations
 - Remove "MapMusic" reference from the whole project (Former project name);

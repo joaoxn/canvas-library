@@ -3,10 +3,11 @@ export {
 }
 
 class CanvasWrapper {
-    canvas: HTMLCanvasElement;
-    ctx: CanvasRenderingContext2D;
+    readonly canvas: HTMLCanvasElement;
+    readonly ctx: CanvasRenderingContext2D;
+    readonly canvasMirror?: HTMLDivElement;
 
-    constructor(canvasOrSelector: HTMLCanvasElement | string) {
+    constructor(canvasOrSelector: HTMLCanvasElement | string, canvasMirror?: HTMLDivElement | true) {
         this.canvas = typeof canvasOrSelector !== 'string' ? canvasOrSelector : document.querySelector(canvasOrSelector) as HTMLCanvasElement;
         if (!this.canvas) {
             throw new Error("Canvas element not found.");
@@ -17,6 +18,42 @@ class CanvasWrapper {
             throw new Error("Failed to get 2D context. The canvas may not be supported or is not attached to the DOM.");
         }
         this.ctx = ctx;
+
+        if (canvasMirror === true) {
+            this.createMirror();
+        } else {
+            this.canvasMirror = canvasMirror;
+        }
+
+    }
+
+    private createMirror() {
+        const canvasAsDivWrapper = document.createElement('div');
+
+        const styles = window.getComputedStyle(this.canvas);
+        if (styles.cssText !== '') {
+            canvasAsDivWrapper.style.cssText = styles.cssText;
+        } else {
+            const cssText = Array.from(styles).reduce(
+                (css, propertyName) =>
+                    `${css}${propertyName}:${styles.getPropertyValue(
+                        propertyName
+                    )};`
+            );
+
+            canvasAsDivWrapper.style.cssText = cssText
+        }
+        this.canvas.parentElement?.appendChild(canvasAsDivWrapper);
+        canvasAsDivWrapper.appendChild(this.canvas);
+
+        const newMirror = document.createElement('div');
+        newMirror.style.position = "absolute";
+        newMirror.style.top = "0";
+        newMirror.style.left = "0";
+        newMirror.style.width = "100%";
+        newMirror.style.height = "100%";
+
+        canvasAsDivWrapper.appendChild(newMirror);
     }
 }
 
@@ -27,8 +64,8 @@ function getWrapper() {
     return canvasWrapper;
 }
 
-function initializeCanvas(canvasOrSelector: HTMLCanvasElement | string) {
-    canvasWrapper = new CanvasWrapper(canvasOrSelector);
+function initializeCanvas(canvasOrSelector: HTMLCanvasElement | string, canvasMirror?: HTMLDivElement | true) {
+    canvasWrapper = new CanvasWrapper(canvasOrSelector, canvasMirror);
 }
 
 interface Shape {
@@ -163,6 +200,64 @@ class Style {
     text?: string;
     textColor: string = "black";
 }
+
+class HTMLDisplayElement extends HTMLElement {
+    constructor(x: number, y: number, width: number, height: number) {
+        super();
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.parentElement = getWrapper().canvas;
+    }
+
+    set parentElement(value: HTMLDisplayElement | HTMLElement) {
+
+
+        if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvas)
+            throw new TypeError("parentElement must be an HTMLDisplayElement or the canvas itself.")
+        this.parentElement.appendChild(this);
+    }
+
+    get x() {
+        const leftStyle = this.computedStyleMap().get("left")?.toString();
+        return Number(leftStyle?.replaceAll(/\D/g, ""));
+    }
+    
+    set x(value: number) {
+        this.style.position = "absolute";
+        this.style.left = value + "px";
+    }
+
+    get y() {
+        const topStyle = this.computedStyleMap().get("top")?.toString();
+        return Number(topStyle?.replaceAll(/\D/g, ""));
+    }
+    
+    set y(value: number) {
+        this.style.position = "absolute";
+        this.style.top = value + "px";
+    }
+
+    get width() {
+        const widthStyle = this.computedStyleMap().get("width")?.toString();
+        return Number(widthStyle?.replaceAll(/\D/g, ""));
+    }
+
+    set width(value: number) {
+        this.style.width = value + "px";
+    }
+
+    get height() {
+        const heightStyle = this.computedStyleMap().get("height")?.toString();
+        return Number(heightStyle?.replaceAll(/\D/g, ""));
+    }
+
+    set height(value: number) {
+        this.style.height = value + "px";
+    }
+}
+
 
 class UIElement extends Box {
     style: Style;
