@@ -402,16 +402,29 @@ class Movable extends UIElement {
         log(this, "was REMOVED from context");
     }
 
-    collided(): Movable[] {
+    /**
+     * Checks for collisions with other Movable elements.
+     *
+     * @param considerCollisionGroup - If true, only collides with other Movable elements that have the same collisionGroup.
+     *                                  If false, collides with any other Movable element. Default is true.
+     *
+     * @returns An array of Movable elements that this Movable element is currently colliding with.
+     *          If no collisions are detected, returns an empty array.
+     *
+     * @remarks This method does not handle the response to collisions.
+     *          To handle collision responses, use the collisionCallback property of the Movable elements.
+     */
+    collided(considerCollisionGroup: boolean = true): Movable[] {
         const collidedElements: Movable[] = [];
         for (const other of Movable.elements) {
             if (this !== other
-                && this.collisionGroup === other.collisionGroup
+                && (this.collisionGroup === other.collisionGroup || !considerCollisionGroup)
                 && this.inside(other) !== -1)
                 collidedElements.push(other);
         }
         return collidedElements;
     }
+
 
     /**
      * Updates the state of the element.
