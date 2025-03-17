@@ -115,6 +115,23 @@ class Vector {
             .hit(new Vector(this.x, this.y));
     }
 
+    toCanvasPosition() {
+        const canvas = getWrapper().canvas;
+        const rect = canvas.getBoundingClientRect();
+        const coeff = {
+            x: canvas.width / rect.width,
+            y: canvas.height / rect.height
+        }
+
+        this.x -= rect.x;
+        this.x *= coeff.x;
+
+        this.y -= rect.y;
+        this.y *= coeff.y;
+        
+        return this;
+    }
+
     static add(vector1: Vector, vector2: Vector) {
         return new Vector(vector1.x + vector2.x, vector1.y + vector2.y);
     }
@@ -154,13 +171,26 @@ class Box implements Shape {
      * @returns A new Box instance representing the position and dimensions of the HTML element relative to the canvas.
      */
     static fromHTML(element: HTMLElement) {
-        const canvasRect = getWrapper().canvas.getBoundingClientRect();
         const elementRect = element.getBoundingClientRect();
 
-        return new Box(elementRect.x - canvasRect.x, elementRect.y - canvasRect.y, 
-            elementRect.width, elementRect.height);
+        return new Box(elementRect.x, elementRect.y, 
+            elementRect.width, elementRect.height)
+            .toCanvasPosition();
     }
 
+    toCanvasPosition() {
+        const canvas = getWrapper().canvas;
+        const newOrigin = new Vector(this.x, this.y)
+            .toCanvasPosition();
+        const newSize = new Vector(this.x + this.width, this.y + this.height)
+            .toCanvasPosition();
+
+        this.x = newOrigin.x;
+        this.y = newOrigin.y;
+        this.width = newSize.x - newOrigin.x;
+        this.height = newSize.y - newOrigin.y;
+        return this;
+    }
 
     hit(point: Vector): boolean {
         return point.x >= this.x && point.x <= this.x + this.width
