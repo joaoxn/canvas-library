@@ -296,12 +296,11 @@ class UIElement extends Box {
     }
 
     delete() {
-        const classes = [UIElement];
+        const staticClass = UIElement;
 
-        for (const staticClass of classes) {
             const idx = staticClass.elements.indexOf(this);
             staticClass.elements.splice(idx, 1);
-        }
+        
         this.deleted = true;
         log(this, "was REMOVED from context");
     }
@@ -392,12 +391,12 @@ class Movable extends UIElement {
     }
 
     delete() {
-        const classes = [UIElement, Movable];
+        super.delete();
+        const staticClass = Movable;
 
-        for (const staticClass of classes) {
             const idx = staticClass.elements.indexOf(this);
             staticClass.elements.splice(idx, 1);
-        }
+        
         this.deleted = true;
         log(this, "was REMOVED from context");
     }
