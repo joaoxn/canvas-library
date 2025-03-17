@@ -24,14 +24,14 @@ class CanvasWrapper {
         this.logsEnabled = logsEnabled;
 
         if (canvasMirror === true) {
-            this.createMirror();
+            this.canvasMirror = this.createMirror();
         } else {
             this.canvasMirror = canvasMirror ? canvasMirror : undefined;
         }
 
     }
 
-    private createMirror() {
+    private createMirror(): HTMLDivElement {
         function fillParent(element: HTMLElement) {
             element.style.position = 'absolute';
             element.style.top = '0';
@@ -70,11 +70,12 @@ class CanvasWrapper {
         canvasAsDivWrapper.appendChild(wrapper);
         wrapper.appendChild(this.canvas);
 
-        const newMirror = document.createElement('div');
-        fillParent(newMirror);
-        newMirror.style.zIndex = '1';
+        const mirror = document.createElement('div');
+        fillParent(mirror);
+        mirror.style.zIndex = '1';
 
-        wrapper.appendChild(newMirror);
+        wrapper.appendChild(mirror);
+        return mirror;
     }
 }
 
