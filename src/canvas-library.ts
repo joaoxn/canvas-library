@@ -266,15 +266,17 @@ class Style {
 }
 
 class HTMLDisplayElement {
-    element: HTMLElement; 
+    element: HTMLElement;
 
-    constructor(element: HTMLElement) {
+    constructor(element: HTMLElement | string, parent?: HTMLDisplayElement) {
+        if (typeof element === "string")
+            element = document.createElement(element);
         this.element = element;
 
         const mirror = getWrapper().canvasMirror;
         if (!mirror)
             throw new Error("Disabled functionality because canvasMirror is not available");
-        this.parentElement = mirror;
+        this.parentElement = parent ?? mirror;
     }
 
     set parentElement(value: HTMLDisplayElement | HTMLElement) {
