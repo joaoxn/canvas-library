@@ -378,12 +378,11 @@ class UIElement extends Box {
      * A static method that returns a callback function to handle click events.
      * This callback function invokes the clickCallback of every box that the mouse hits with such callback defined.
      *
-     * @returns {(event: MouseEvent) => void} - A callback function that handles click events.
+     * @returns {(event: MouseEvent) => void} A callback function that handles click events.
      */
-    static getClickCallback() {
+    static getClickCallback(): (event: MouseEvent) => void {
         return (event: MouseEvent) => {
-            const rect = getWrapper().canvas.getBoundingClientRect();
-            const position = new Vector(event.x - rect.x, event.y - rect.y);
+            const position = new Vector(event.x, event.y).toCanvasPosition();
 
             if (!position.insideCanvas()) return;
 
@@ -398,9 +397,9 @@ class UIElement extends Box {
      * A static method that returns a callback function to handle keydown events.
      * This callback function iterates through all UIElement instances and invokes their keydownCallback if defined.
      *
-     * @returns {(event: KeyboardEvent) => void} - A callback function that handles keydown events.
+     * @returns {(event: KeyboardEvent) => void} A callback function that handles keydown events.
      */
-    static getKeydownCallback() {
+    static getKeydownCallback(): (event: KeyboardEvent) => void {
         return (event: KeyboardEvent) => {
             for (const element of this.elements)
                 if (element.keydownCallback)
