@@ -265,60 +265,64 @@ class Style {
     textColor: string = "black";
 }
 
-class HTMLDisplayElement extends HTMLElement {
-    constructor(x: number, y: number, width: number, height: number) {
-        super();
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.parentElement = getWrapper().canvas;
+class HTMLDisplayElement {
+    element: HTMLElement; 
+
+    constructor(element: HTMLElement) {
+        this.element = element;
+
+        const mirror = getWrapper().canvasMirror;
+        if (!mirror)
+            throw new Error("Disabled functionality because canvasMirror is not available");
+        this.parentElement = mirror;
     }
 
     set parentElement(value: HTMLDisplayElement | HTMLElement) {
+        if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvasMirror)
+            throw new TypeError("parentElement must be an HTMLDisplayElement or the canvasMirror itself.")
 
-
-        if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvas)
-            throw new TypeError("parentElement must be an HTMLDisplayElement or the canvas itself.")
-        this.parentElement.appendChild(this);
+        if (value instanceof HTMLDisplayElement)
+            value.element.appendChild(this.element);
+        else
+            value.appendChild(this.element);
     }
 
     get x() {
-        const leftStyle = this.computedStyleMap().get("left")?.toString();
+        const leftStyle = this.element.computedStyleMap().get("left")?.toString();
         return Number(leftStyle?.replaceAll(/\D/g, ""));
     }
 
     set x(value: number) {
-        this.style.position = "absolute";
-        this.style.left = value + "px";
+        this.element.style.position = "absolute";
+        this.element.style.left = value + "px";
     }
 
     get y() {
-        const topStyle = this.computedStyleMap().get("top")?.toString();
+        const topStyle = this.element.computedStyleMap().get("top")?.toString();
         return Number(topStyle?.replaceAll(/\D/g, ""));
     }
 
     set y(value: number) {
-        this.style.position = "absolute";
-        this.style.top = value + "px";
+        this.element.style.position = "absolute";
+        this.element.style.top = value + "px";
     }
 
     get width() {
-        const widthStyle = this.computedStyleMap().get("width")?.toString();
+        const widthStyle = this.element.computedStyleMap().get("width")?.toString();
         return Number(widthStyle?.replaceAll(/\D/g, ""));
     }
 
     set width(value: number) {
-        this.style.width = value + "px";
+        this.element.style.width = value + "px";
     }
 
     get height() {
-        const heightStyle = this.computedStyleMap().get("height")?.toString();
+        const heightStyle = this.element.computedStyleMap().get("height")?.toString();
         return Number(heightStyle?.replaceAll(/\D/g, ""));
     }
 
     set height(value: number) {
-        this.style.height = value + "px";
+        this.element.style.height = value + "px";
     }
 }
 
