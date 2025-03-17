@@ -8,7 +8,7 @@ class CanvasWrapper {
     logsEnabled: boolean;
     readonly canvasMirror?: HTMLDivElement;
 
-    constructor(canvasOrSelector: HTMLCanvasElement | string, logsEnabled: boolean, canvasMirror?: HTMLDivElement | true) {
+    constructor(canvasOrSelector: HTMLCanvasElement | string, logsEnabled: boolean, canvasMirror: HTMLDivElement | boolean) {
         const canvas = typeof canvasOrSelector !== 'string' ? 
             canvasOrSelector : document.querySelector(canvasOrSelector);
             
@@ -26,7 +26,7 @@ class CanvasWrapper {
         if (canvasMirror === true) {
             this.createMirror();
         } else {
-            this.canvasMirror = canvasMirror;
+            this.canvasMirror = canvasMirror ? canvasMirror : undefined;
         }
 
     }
@@ -69,7 +69,7 @@ function getWrapper() {
     return canvasWrapper;
 }
 
-function init(canvasOrSelector: HTMLCanvasElement | string, enableLogs = false, canvasMirror?: HTMLDivElement | true) {
+function init(canvasOrSelector: HTMLCanvasElement | string, enableLogs = false, canvasMirror: HTMLDivElement | boolean = false) {
     canvasWrapper = new CanvasWrapper(canvasOrSelector, enableLogs, canvasMirror);
 }
 
