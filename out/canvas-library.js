@@ -3,7 +3,8 @@ class CanvasWrapper {
     canvas;
     ctx;
     logsEnabled;
-    constructor(canvasOrSelector, logsEnabled) {
+    canvasMirror;
+    constructor(canvasOrSelector, logsEnabled, canvasMirror) {
         const canvas = typeof canvasOrSelector !== 'string' ?
             canvasOrSelector : document.querySelector(canvasOrSelector);
         if (!canvas || !(canvas instanceof HTMLCanvasElement))
@@ -14,6 +15,45 @@ class CanvasWrapper {
             throw new Error("Failed to get 2D context. Canvas may not be supported or is not attached to the DOM.");
         this.ctx = ctx;
         this.logsEnabled = logsEnabled;
+        if (canvasMirror === true) {
+            this.createMirror();
+        }
+        else {
+            this.canvasMirror = canvasMirror ? canvasMirror : undefined;
+        }
+    }
+    createMirror() {
+        function fillParent(element) {
+            element.style.position = 'absolute';
+            element.style.top = '0';
+            element.style.left = '0';
+            element.style.width = '100%';
+            element.style.height = '100%';
+        }
+        const canvasAsDivWrapper = document.createElement('div');
+        const styles = window.getComputedStyle(this.canvas);
+        if (styles.cssText !== '') {
+            canvasAsDivWrapper.style.cssText = styles.cssText;
+        }
+        else {
+            const cssText = Array.from(styles).reduce((css, propertyName) => `${css}${propertyName}:${styles.getPropertyValue(propertyName)};`);
+            canvasAsDivWrapper.style.cssText = cssText;
+        }
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        wrapper.style.width = '100%';
+        wrapper.style.height = '100%';
+        this.canvas.style.cssText = '';
+        this.canvas.className = '';
+        this.canvas.id = '';
+        fillParent(this.canvas);
+        this.canvas.parentElement?.appendChild(canvasAsDivWrapper);
+        canvasAsDivWrapper.appendChild(wrapper);
+        wrapper.appendChild(this.canvas);
+        const newMirror = document.createElement('div');
+        fillParent(newMirror);
+        newMirror.style.zIndex = '1';
+        wrapper.appendChild(newMirror);
     }
 }
 let canvasWrapper;
@@ -22,8 +62,8 @@ function getWrapper() {
         throw new Error("canvasWrapper was not initialized. Please call init(...) before using the library.");
     return canvasWrapper;
 }
-function init(canvasOrSelector, enableLogs = false) {
-    canvasWrapper = new CanvasWrapper(canvasOrSelector, enableLogs);
+function init(canvasOrSelector, enableLogs = false, canvasMirror = false) {
+    canvasWrapper = new CanvasWrapper(canvasOrSelector, enableLogs, canvasMirror);
 }
 function log(...message) {
     if (!getWrapper().logsEnabled)
@@ -54,6 +94,19 @@ class Vector {
     insideCanvas() {
         return Box.fromHTML(getWrapper().canvas)
             .hit(new Vector(this.x, this.y));
+    }
+    toCanvasPosition() {
+        const canvas = getWrapper().canvas;
+        const rect = canvas.getBoundingClientRect();
+        const coeff = {
+            x: canvas.width / rect.width,
+            y: canvas.height / rect.height
+        };
+        this.x -= rect.x;
+        this.x *= coeff.x;
+        this.y -= rect.y;
+        this.y *= coeff.y;
+        return this;
     }
     static add(vector1, vector2) {
         return new Vector(vector1.x + vector2.x, vector1.y + vector2.y);
@@ -90,9 +143,21 @@ class Box {
      * @returns A new Box instance representing the position and dimensions of the HTML element relative to the canvas.
      */
     static fromHTML(element) {
-        const canvasRect = getWrapper().canvas.getBoundingClientRect();
         const elementRect = element.getBoundingClientRect();
-        return new Box(elementRect.x - canvasRect.x, elementRect.y - canvasRect.y, elementRect.width, elementRect.height);
+        return new Box(elementRect.x, elementRect.y, elementRect.width, elementRect.height)
+            .toCanvasPosition();
+    }
+    toCanvasPosition() {
+        const canvas = getWrapper().canvas;
+        const newOrigin = new Vector(this.x, this.y)
+            .toCanvasPosition();
+        const newSize = new Vector(this.x + this.width, this.y + this.height)
+            .toCanvasPosition();
+        this.x = newOrigin.x;
+        this.y = newOrigin.y;
+        this.width = newSize.x - newOrigin.x;
+        this.height = newSize.y - newOrigin.y;
+        return this;
     }
     hit(point) {
         return point.x >= this.x && point.x <= this.x + this.width
@@ -141,6 +206,51 @@ class Style {
     text;
     textColor = "black";
 }
+class HTMLDisplayElement extends HTMLElement {
+    constructor(x, y, width, height) {
+        super();
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.parentElement = getWrapper().canvas;
+    }
+    set parentElement(value) {
+        if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvas)
+            throw new TypeError("parentElement must be an HTMLDisplayElement or the canvas itself.");
+        this.parentElement.appendChild(this);
+    }
+    get x() {
+        const leftStyle = this.computedStyleMap().get("left")?.toString();
+        return Number(leftStyle?.replaceAll(/\D/g, ""));
+    }
+    set x(value) {
+        this.style.position = "absolute";
+        this.style.left = value + "px";
+    }
+    get y() {
+        const topStyle = this.computedStyleMap().get("top")?.toString();
+        return Number(topStyle?.replaceAll(/\D/g, ""));
+    }
+    set y(value) {
+        this.style.position = "absolute";
+        this.style.top = value + "px";
+    }
+    get width() {
+        const widthStyle = this.computedStyleMap().get("width")?.toString();
+        return Number(widthStyle?.replaceAll(/\D/g, ""));
+    }
+    set width(value) {
+        this.style.width = value + "px";
+    }
+    get height() {
+        const heightStyle = this.computedStyleMap().get("height")?.toString();
+        return Number(heightStyle?.replaceAll(/\D/g, ""));
+    }
+    set height(value) {
+        this.style.height = value + "px";
+    }
+}
 class UIElement extends Box {
     style;
     clickCallback;
@@ -157,11 +267,9 @@ class UIElement extends Box {
         return this.deleted;
     }
     delete() {
-        const classes = [UIElement];
-        for (const staticClass of classes) {
-            const idx = staticClass.elements.indexOf(this);
-            staticClass.elements.splice(idx, 1);
-        }
+        const staticClass = UIElement;
+        const idx = staticClass.elements.indexOf(this);
+        staticClass.elements.splice(idx, 1);
         this.deleted = true;
         log(this, "was REMOVED from context");
     }
@@ -186,12 +294,11 @@ class UIElement extends Box {
      * A static method that returns a callback function to handle click events.
      * This callback function invokes the clickCallback of every box that the mouse hits with such callback defined.
      *
-     * @returns {(event: MouseEvent) => void} - A callback function that handles click events.
+     * @returns {(event: MouseEvent) => void} A callback function that handles click events.
      */
     static getClickCallback() {
         return (event) => {
-            const rect = getWrapper().canvas.getBoundingClientRect();
-            const position = new Vector(event.x - rect.x, event.y - rect.y);
+            const position = new Vector(event.x, event.y).toCanvasPosition();
             if (!position.insideCanvas())
                 return;
             for (const element of this.elements)
@@ -203,7 +310,7 @@ class UIElement extends Box {
      * A static method that returns a callback function to handle keydown events.
      * This callback function iterates through all UIElement instances and invokes their keydownCallback if defined.
      *
-     * @returns {(event: KeyboardEvent) => void} - A callback function that handles keydown events.
+     * @returns {(event: KeyboardEvent) => void} A callback function that handles keydown events.
      */
     static getKeydownCallback() {
         return (event) => {
@@ -234,19 +341,30 @@ class Movable extends UIElement {
         Movable.elements.push(this);
     }
     delete() {
-        const classes = [UIElement, Movable];
-        for (const staticClass of classes) {
-            const idx = staticClass.elements.indexOf(this);
-            staticClass.elements.splice(idx, 1);
-        }
+        super.delete();
+        const staticClass = Movable;
+        const idx = staticClass.elements.indexOf(this);
+        staticClass.elements.splice(idx, 1);
         this.deleted = true;
         log(this, "was REMOVED from context");
     }
-    collided() {
+    /**
+     * Checks for collisions with other Movable elements.
+     *
+     * @param considerCollisionGroup - If true, only collides with other Movable elements that have the same collisionGroup.
+     *                                  If false, collides with any other Movable element. Default is true.
+     *
+     * @returns An array of Movable elements that this Movable element is currently colliding with.
+     *          If no collisions are detected, returns an empty array.
+     *
+     * @remarks This method does not handle the response to collisions.
+     *          To handle collision responses, use the collisionCallback property of the Movable elements.
+     */
+    collided(considerCollisionGroup = true) {
         const collidedElements = [];
         for (const other of Movable.elements) {
             if (this !== other
-                && this.collisionGroup === other.collisionGroup
+                && (this.collisionGroup === other.collisionGroup || !considerCollisionGroup)
                 && this.inside(other) !== -1)
                 collidedElements.push(other);
         }

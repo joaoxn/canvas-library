@@ -9,9 +9,9 @@ class CanvasWrapper {
     readonly canvasMirror?: HTMLDivElement;
 
     constructor(canvasOrSelector: HTMLCanvasElement | string, logsEnabled: boolean, canvasMirror: HTMLDivElement | boolean) {
-        const canvas = typeof canvasOrSelector !== 'string' ? 
+        const canvas = typeof canvasOrSelector !== 'string' ?
             canvasOrSelector : document.querySelector(canvasOrSelector);
-            
+
         if (!canvas || !(canvas instanceof HTMLCanvasElement))
             throw new Error("Canvas element not found. Given querySelector may be incorrect or a canvas with such selector does not exist.");
         this.canvas = canvas;
@@ -20,7 +20,7 @@ class CanvasWrapper {
         if (!ctx)
             throw new Error("Failed to get 2D context. Canvas may not be supported or is not attached to the DOM.");
         this.ctx = ctx;
-        
+
         this.logsEnabled = logsEnabled;
 
         if (canvasMirror === true) {
@@ -65,7 +65,7 @@ class CanvasWrapper {
         this.canvas.className = '';
         this.canvas.id = '';
         fillParent(this.canvas);
-        
+
         this.canvas.parentElement?.appendChild(canvasAsDivWrapper);
         canvasAsDivWrapper.appendChild(wrapper);
         wrapper.appendChild(this.canvas);
@@ -81,7 +81,7 @@ class CanvasWrapper {
 let canvasWrapper: CanvasWrapper | undefined;
 
 function getWrapper() {
-    if (!canvasWrapper) 
+    if (!canvasWrapper)
         throw new Error("canvasWrapper was not initialized. Please call init(...) before using the library.");
     return canvasWrapper;
 }
@@ -145,7 +145,7 @@ class Vector {
 
         this.y -= rect.y;
         this.y *= coeff.y;
-        
+
         return this;
     }
 
@@ -190,7 +190,7 @@ class Box implements Shape {
     static fromHTML(element: HTMLElement) {
         const elementRect = element.getBoundingClientRect();
 
-        return new Box(elementRect.x, elementRect.y, 
+        return new Box(elementRect.x, elementRect.y,
             elementRect.width, elementRect.height)
             .toCanvasPosition();
     }
@@ -214,7 +214,7 @@ class Box implements Shape {
             && point.y >= this.y && point.y <= this.y + this.height;
     }
 
-    
+
     /**
      * Determines if this box is completely inside, completely outside, or intersects with another box.
      *
@@ -228,23 +228,23 @@ class Box implements Shape {
     inside(box: Box, inclusive: boolean = true): number {
         const compare = (a: number, b: number, isInclusive: boolean) => isInclusive ? a >= b : a > b;
         const compareOpposite = (a: number, b: number, isInclusive: boolean) => isInclusive ? a <= b : a < b;
-    
+
         const leftInside = compare(this.x, box.x, inclusive);
         const rightInside = compareOpposite(this.x + this.width, box.x + box.width, inclusive);
         const topInside = compare(this.y, box.y, inclusive);
         const bottomInside = compareOpposite(this.y + this.height, box.y + box.height, inclusive);
-    
+
         if (leftInside && rightInside && topInside && bottomInside) return 1;
-    
+
         const leftOutside = compareOpposite(this.x + this.width, box.x, inclusive);
         const rightOutside = compare(this.x, box.x + box.width, inclusive);
         const topOutside = compareOpposite(this.y + this.height, box.y, inclusive);
         const bottomOutside = compare(this.y, box.y + box.height, inclusive);
-    
+
         if (leftOutside || rightOutside || topOutside || bottomOutside) return -1;
-    
+
         return 0;
-    }    
+    }
 
     /**
      * Determines if this box is completely inside, completely outside, or intersects with the canvas.
@@ -286,7 +286,7 @@ class HTMLDisplayElement extends HTMLElement {
         const leftStyle = this.computedStyleMap().get("left")?.toString();
         return Number(leftStyle?.replaceAll(/\D/g, ""));
     }
-    
+
     set x(value: number) {
         this.style.position = "absolute";
         this.style.left = value + "px";
@@ -296,7 +296,7 @@ class HTMLDisplayElement extends HTMLElement {
         const topStyle = this.computedStyleMap().get("top")?.toString();
         return Number(topStyle?.replaceAll(/\D/g, ""));
     }
-    
+
     set y(value: number) {
         this.style.position = "absolute";
         this.style.top = value + "px";
@@ -345,9 +345,9 @@ class UIElement extends Box {
     delete() {
         const staticClass = UIElement;
 
-            const idx = staticClass.elements.indexOf(this);
-            staticClass.elements.splice(idx, 1);
-        
+        const idx = staticClass.elements.indexOf(this);
+        staticClass.elements.splice(idx, 1);
+
         this.deleted = true;
         log(this, "was REMOVED from context");
     }
@@ -440,9 +440,9 @@ class Movable extends UIElement {
         super.delete();
         const staticClass = Movable;
 
-            const idx = staticClass.elements.indexOf(this);
-            staticClass.elements.splice(idx, 1);
-        
+        const idx = staticClass.elements.indexOf(this);
+        staticClass.elements.splice(idx, 1);
+
         this.deleted = true;
         log(this, "was REMOVED from context");
     }

@@ -1,5 +1,5 @@
 import { init, getWrapper, UIElement, Movable } from "./canvas-library.js";
-init("#game");
+init("#game", false, true);
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
 const GRAVITY = 0.6;
@@ -9,6 +9,9 @@ const player = new Movable(25, (canvas.height - 30) * 30 / 100, 50, 30);
 player.acceleration.y = GRAVITY;
 player.deleteIfOutOfBounds = false;
 const floor = new Movable(0, canvas.height - 10, canvas.width, 10);
+floor.clickCallback = () => {
+    console.log("Clicked!");
+};
 player.keydownCallback = (event) => {
     const jumpKeys = [' ', 'ArrowUp', 'W'];
     if (jumpKeys.includes(event.key)) {
@@ -20,11 +23,12 @@ player.collisionCallback = (player, other) => {
 };
 class Pipe extends Movable {
     constructor(onTop, height) {
-        const x = canvas.width;
+        const velocity = -5;
+        const x = canvas.width + velocity;
         const y = onTop ? 0 : canvas.height - height;
         const width = 50;
         super(x, y, width, height);
-        this.velocity.x = -5;
+        this.velocity.x = velocity;
         this.deleteIfOutOfBounds = true;
     }
     tickCallback = (pipe) => {
