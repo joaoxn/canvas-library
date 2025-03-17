@@ -326,6 +326,42 @@ class HTMLDisplayElement {
     set height(value: number) {
         this.element.style.height = value + "px";
     }
+
+    static fromHTML(html: string, css?: string, parent?: HTMLDisplayElement): HTMLDisplayElement {
+        const parser = new DOMParser();
+        const document = parser.parseFromString(html, "text/html");
+        const element = document.body.firstChild;
+        if (!(element instanceof HTMLElement)) throw new Error("Invalid HTML text");
+
+        element.style.cssText += css ?? "";
+        return new this(element, parent);
+    }
+    static allFromHTML(html: string, parent?: HTMLDisplayElement): HTMLDisplayElement[] {
+        const parser = new DOMParser();
+        const document = parser.parseFromString(html, "text/html");
+        const elementsCollection = document.body.children;
+        const elements: Element[] = Array.from(elementsCollection);
+        
+        const instances: HTMLDisplayElement[] = [];
+        
+        function createRecursively(element: HTMLElement, parent?: HTMLDisplayElement) {
+            const instance = new HTMLDisplayElement(element, parent);
+            instances.push(instance);
+            const children = Array.from(element.children);
+            
+            for (const child of children) {
+                if (!(child instanceof HTMLElement)) continue;
+                createRecursively(child, instance);
+            }
+        }
+        
+        for (const element of elements) {
+            if (!(element instanceof HTMLElement)) continue;
+            createRecursively(element);
+        }
+
+        return instances;
+    }
 }
 
 

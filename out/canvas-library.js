@@ -209,12 +209,14 @@ class Style {
 }
 class HTMLDisplayElement {
     element;
-    constructor(element) {
+    constructor(element, parent) {
+        if (typeof element === "string")
+            element = document.createElement(element);
         this.element = element;
         const mirror = getWrapper().canvasMirror;
         if (!mirror)
             throw new Error("Disabled functionality because canvasMirror is not available");
-        this.parentElement = mirror;
+        this.parentElement = parent ?? mirror;
     }
     set parentElement(value) {
         if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvasMirror)
@@ -253,6 +255,38 @@ class HTMLDisplayElement {
     }
     set height(value) {
         this.element.style.height = value + "px";
+    }
+    static fromHTML(html, css, parent) {
+        const parser = new DOMParser();
+        const document = parser.parseFromString(html, "text/html");
+        const element = document.body.firstChild;
+        if (!(element instanceof HTMLElement))
+            throw new Error("Invalid HTML text");
+        element.style.cssText += css ?? "";
+        return new this(element, parent);
+    }
+    static allFromHTML(html, parent) {
+        const parser = new DOMParser();
+        const document = parser.parseFromString(html, "text/html");
+        const elementsCollection = document.body.children;
+        const elements = Array.from(elementsCollection);
+        const instances = [];
+        function createRecursively(element, parent) {
+            const instance = new HTMLDisplayElement(element, parent);
+            instances.push(instance);
+            const children = Array.from(element.children);
+            for (const child of children) {
+                if (!(child instanceof HTMLElement))
+                    continue;
+                createRecursively(child, instance);
+            }
+        }
+        for (const element of elements) {
+            if (!(element instanceof HTMLElement))
+                continue;
+            createRecursively(element);
+        }
+        return instances;
     }
 }
 class UIElement extends Box {

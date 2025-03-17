@@ -4,12 +4,36 @@ const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
 const GRAVITY = 0.6;
 let frozen = false;
-const button = new HTMLDisplayElement(document.createElement("button"));
-button.x = 10;
-button.y = 10;
-button.width = 50;
-button.height = 30;
-button.element.style.background = "brown";
+const created = HTMLDisplayElement.allFromHTML(`
+        <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h1>Game Over</h1>
+            <h2>Your Score: 0</h2>
+            <button id="restart" style="margin-top: 50px; background-color: black;">Restart</button>
+        </div>
+    `);
+console.log(created);
+const button = created.at(-1);
+button.height = 50;
+button.width = 100;
+// const div = new HTMLDisplayElement("div");
+// div.x = 0;
+// div.y = 0;
+// div.width = canvas.width;
+// div.height = canvas.height;
+// div.element.style.cssText += `
+//     display: flex;
+//     flex-direction: column;
+//     align-items: center;
+//     justify-content: center;
+// `;
+// const gameover = new HTMLDisplayElement("h1", div);
+// gameover.element.innerText = "Game Over";
+// const score = new HTMLDisplayElement("h2", div);
+// score.element.innerText = "0 Points";
+// const restart = new HTMLDisplayElement("button", div);
+// restart.width = 100;
+// restart.height = 50;
+// restart.element.style.marginTop = "50px";
 UIElement.addListeners();
 const player = new Movable(25, (canvas.height - 30) * 30 / 100, 50, 30);
 player.acceleration.y = GRAVITY;
@@ -38,7 +62,7 @@ class Pipe extends Movable {
         this.deleteIfOutOfBounds = true;
     }
     tickCallback = (pipe) => {
-        console.log(pipe);
+        // console.log(pipe);
     };
 }
 function newPipes(gapHeight, yGap) {
