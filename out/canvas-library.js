@@ -1,4 +1,4 @@
-export { init, getWrapper, Vector, Box, Style, UIElement, Movable };
+export { init, getWrapper, Vector, Box, Style, UIElement, HTMLDisplayElement, Movable };
 class CanvasWrapper {
     canvas;
     ctx;
@@ -16,7 +16,7 @@ class CanvasWrapper {
         this.ctx = ctx;
         this.logsEnabled = logsEnabled;
         if (canvasMirror === true) {
-            this.createMirror();
+            this.canvasMirror = this.createMirror();
         }
         else {
             this.canvasMirror = canvasMirror ? canvasMirror : undefined;
@@ -50,10 +50,11 @@ class CanvasWrapper {
         this.canvas.parentElement?.appendChild(canvasAsDivWrapper);
         canvasAsDivWrapper.appendChild(wrapper);
         wrapper.appendChild(this.canvas);
-        const newMirror = document.createElement('div');
-        fillParent(newMirror);
-        newMirror.style.zIndex = '1';
-        wrapper.appendChild(newMirror);
+        const mirror = document.createElement('div');
+        fillParent(mirror);
+        mirror.style.zIndex = '1';
+        wrapper.appendChild(mirror);
+        return mirror;
     }
 }
 let canvasWrapper;
@@ -206,49 +207,52 @@ class Style {
     text;
     textColor = "black";
 }
-class HTMLDisplayElement extends HTMLElement {
-    constructor(x, y, width, height) {
-        super();
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-        this.parentElement = getWrapper().canvas;
+class HTMLDisplayElement {
+    element;
+    constructor(element) {
+        this.element = element;
+        const mirror = getWrapper().canvasMirror;
+        if (!mirror)
+            throw new Error("Disabled functionality because canvasMirror is not available");
+        this.parentElement = mirror;
     }
     set parentElement(value) {
-        if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvas)
-            throw new TypeError("parentElement must be an HTMLDisplayElement or the canvas itself.");
-        this.parentElement.appendChild(this);
+        if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvasMirror)
+            throw new TypeError("parentElement must be an HTMLDisplayElement or the canvasMirror itself.");
+        if (value instanceof HTMLDisplayElement)
+            value.element.appendChild(this.element);
+        else
+            value.appendChild(this.element);
     }
     get x() {
-        const leftStyle = this.computedStyleMap().get("left")?.toString();
+        const leftStyle = this.element.computedStyleMap().get("left")?.toString();
         return Number(leftStyle?.replaceAll(/\D/g, ""));
     }
     set x(value) {
-        this.style.position = "absolute";
-        this.style.left = value + "px";
+        this.element.style.position = "absolute";
+        this.element.style.left = value + "px";
     }
     get y() {
-        const topStyle = this.computedStyleMap().get("top")?.toString();
+        const topStyle = this.element.computedStyleMap().get("top")?.toString();
         return Number(topStyle?.replaceAll(/\D/g, ""));
     }
     set y(value) {
-        this.style.position = "absolute";
-        this.style.top = value + "px";
+        this.element.style.position = "absolute";
+        this.element.style.top = value + "px";
     }
     get width() {
-        const widthStyle = this.computedStyleMap().get("width")?.toString();
+        const widthStyle = this.element.computedStyleMap().get("width")?.toString();
         return Number(widthStyle?.replaceAll(/\D/g, ""));
     }
     set width(value) {
-        this.style.width = value + "px";
+        this.element.style.width = value + "px";
     }
     get height() {
-        const heightStyle = this.computedStyleMap().get("height")?.toString();
+        const heightStyle = this.element.computedStyleMap().get("height")?.toString();
         return Number(heightStyle?.replaceAll(/\D/g, ""));
     }
     set height(value) {
-        this.style.height = value + "px";
+        this.element.style.height = value + "px";
     }
 }
 class UIElement extends Box {

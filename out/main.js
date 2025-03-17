@@ -1,9 +1,15 @@
-import { init, getWrapper, UIElement, Movable } from "./canvas-library.js";
+import { init, getWrapper, UIElement, HTMLDisplayElement, Movable } from "./canvas-library.js";
 init("#game", false, true);
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
 const GRAVITY = 0.6;
 let frozen = false;
+const button = new HTMLDisplayElement(document.createElement("button"));
+button.x = 10;
+button.y = 10;
+button.width = 50;
+button.height = 30;
+button.element.style.background = "brown";
 UIElement.addListeners();
 const player = new Movable(25, (canvas.height - 30) * 30 / 100, 50, 30);
 player.acceleration.y = GRAVITY;

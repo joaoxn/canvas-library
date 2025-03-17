@@ -1,5 +1,5 @@
 import { 
-    init, getWrapper, Shape, Vector, Box, Style, UIElement, Movable 
+    init, getWrapper, Shape, Vector, Box, Style, UIElement, HTMLDisplayElement, Movable 
 } from "./canvas-library.js";
 
 init("#game", false, true);
@@ -9,6 +9,13 @@ const ctx = getWrapper().ctx;
 const GRAVITY = 0.6;
 
 let frozen = false;
+
+const button = new HTMLDisplayElement(document.createElement("button"));
+button.x = 10;
+button.y = 10;
+button.width = 50;
+button.height = 30;
+button.element.style.background = "brown";
 
 UIElement.addListeners();
 

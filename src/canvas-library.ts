@@ -1,5 +1,5 @@
 export {
-    init, getWrapper, Shape, Vector, Box, Style, UIElement, Movable
+    init, getWrapper, Shape, Vector, Box, Style, UIElement, HTMLDisplayElement, Movable
 }
 
 class CanvasWrapper {
