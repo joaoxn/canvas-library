@@ -32,6 +32,14 @@ class CanvasWrapper {
     }
 
     private createMirror() {
+        function fillParent(element: HTMLElement) {
+            element.style.position = 'absolute';
+            element.style.top = '0';
+            element.style.left = '0';
+            element.style.width = '100%';
+            element.style.height = '100%';
+        }
+
         const canvasAsDivWrapper = document.createElement('div');
 
         const styles = window.getComputedStyle(this.canvas);
@@ -47,17 +55,26 @@ class CanvasWrapper {
 
             canvasAsDivWrapper.style.cssText = cssText
         }
+
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        wrapper.style.width = '100%';
+        wrapper.style.height = '100%';
+
+        this.canvas.style.cssText = '';
+        this.canvas.className = '';
+        this.canvas.id = '';
+        fillParent(this.canvas);
+        
         this.canvas.parentElement?.appendChild(canvasAsDivWrapper);
-        canvasAsDivWrapper.appendChild(this.canvas);
+        canvasAsDivWrapper.appendChild(wrapper);
+        wrapper.appendChild(this.canvas);
 
         const newMirror = document.createElement('div');
-        newMirror.style.position = "absolute";
-        newMirror.style.top = "0";
-        newMirror.style.left = "0";
-        newMirror.style.width = "100%";
-        newMirror.style.height = "100%";
+        fillParent(newMirror);
+        newMirror.style.zIndex = '1';
 
-        canvasAsDivWrapper.appendChild(newMirror);
+        wrapper.appendChild(newMirror);
     }
 }
 
