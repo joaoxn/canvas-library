@@ -268,7 +268,9 @@ class Style {
 class HTMLDisplayElement {
     element: HTMLElement;
     private _parentElement!: HTMLDisplayElement | HTMLElement;
-    private _children: Set<HTMLDisplayElement> = new Set();
+    private _childrenArray: HTMLDisplayElement[] = [];
+    private _childrenIdMap: Map<string, HTMLDisplayElement> = new Map();
+    private _childrenClassMap: Map<string, HTMLDisplayElement[]> = new Map();
 
     constructor(element: HTMLElement | string, parent?: HTMLDisplayElement) {
         if (typeof element === "string")
@@ -281,16 +283,52 @@ class HTMLDisplayElement {
         this.parentElement = parent ?? mirror;
     }
 
-    get children(): ReadonlySet<HTMLDisplayElement> {
-        return this._children;
+    get children(): ReadonlyArray<HTMLDisplayElement> {
+        return this._childrenArray;
+    }
+
+    getChildById(id: string): HTMLDisplayElement | undefined {
+        return this._childrenIdMap.get(id);
+    }
+
+    getChildrenByClassName(className: string): ReadonlyArray<HTMLDisplayElement> {
+        return this._childrenClassMap.get(className) ?? [];
+    }
+
+    private addChildReference(child: HTMLDisplayElement) {
+        function putIfAbsent<K, V>(map: Map<K, V>, key: K, value: V) {
+            if (!map.has(key))
+                map.set(key, value);
+        }
+        
+        if (child.element.id) {
+            this._childrenIdMap.set(child.element.id, child);
+        }
+        
+        const classes = child.element.className.split(' ');
+        classes.forEach(className => {
+            if (!className) return;
+
+            if (!this._childrenClassMap.has(className))
+                this._childrenClassMap.set(className, []);
+
+            this._childrenClassMap.get(className)!.push(child);
+        })
+
+        this._childrenArray.push(child);
     }
 
     appendChild(child: HTMLDisplayElement) {
-        this._children.add(child);
+        this.addChildReference(child);
+
         this.element.appendChild(child.element);
 
+        function removeFrom<T>(array: Array<T>, obj: T, fromIndex?: number) {
+            array.splice(array.indexOf(obj, fromIndex), 1);
+        }
+
         if (child._parentElement instanceof HTMLDisplayElement)
-            child._parentElement._children.delete(this);
+            removeFrom(child._parentElement._childrenArray, this);
 
         child._parentElement = this;
     }

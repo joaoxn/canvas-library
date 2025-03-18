@@ -210,7 +210,9 @@ class Style {
 class HTMLDisplayElement {
     element;
     _parentElement;
-    _children = new Set();
+    _childrenArray = [];
+    _childrenIdMap = new Map();
+    _childrenClassMap = new Map();
     constructor(element, parent) {
         if (typeof element === "string")
             element = document.createElement(element);
@@ -221,13 +223,40 @@ class HTMLDisplayElement {
         this.parentElement = parent ?? mirror;
     }
     get children() {
-        return this._children;
+        return this._childrenArray;
+    }
+    getChildById(id) {
+        return this._childrenIdMap.get(id);
+    }
+    getChildrenByClassName(className) {
+        return this._childrenClassMap.get(className) ?? [];
+    }
+    addChildReference(child) {
+        function putIfAbsent(map, key, value) {
+            if (!map.has(key))
+                map.set(key, value);
+        }
+        if (child.element.id) {
+            this._childrenIdMap.set(child.element.id, child);
+        }
+        const classes = child.element.className.split(' ');
+        classes.forEach(className => {
+            if (!className)
+                return;
+            if (!this._childrenClassMap.has(className))
+                this._childrenClassMap.set(className, []);
+            this._childrenClassMap.get(className).push(child);
+        });
+        this._childrenArray.push(child);
     }
     appendChild(child) {
-        this._children.add(child);
+        this.addChildReference(child);
         this.element.appendChild(child.element);
+        function removeFrom(array, obj, fromIndex) {
+            array.splice(array.indexOf(obj, fromIndex), 1);
+        }
         if (child._parentElement instanceof HTMLDisplayElement)
-            child._parentElement._children.delete(this);
+            removeFrom(child._parentElement._childrenArray, this);
         child._parentElement = this;
     }
     get parentElement() {
@@ -281,28 +310,34 @@ class HTMLDisplayElement {
         element.style.cssText += css ?? "";
         return new this(element, parent);
     }
+    /**
+     * Parses a string of HTML and creates an array of HTMLDisplayElement instances
+     * from the top-level elements in the HTML string. Each element is recursively
+     * processed to include its children.
+     *
+     * @param html - A string containing HTML markup to be parsed into elements.
+     * @param parent - An optional HTMLDisplayElement that will act as the parent
+     *                 for the created elements. If not provided, the elements will
+     *                 be appended to the canvas mirror.
+     * @returns An array of HTMLDisplayElement instances created from the HTML string.
+     *          Only elements whose parent is the provided parent parameter or the canvas mirror are included in the result.
+     */
     static allFromHTML(html, parent) {
         const parser = new DOMParser();
         const document = parser.parseFromString(html, "text/html");
         const elementsCollection = document.body.children;
-        const elements = Array.from(elementsCollection);
+        const elements = Array.from(elementsCollection).filter(elem => elem instanceof HTMLElement);
         const instances = [];
         function createRecursively(element, parent) {
             const instance = new HTMLDisplayElement(element, parent);
             instances.push(instance);
-            const children = Array.from(element.children);
-            for (const child of children) {
-                if (!(child instanceof HTMLElement))
-                    continue;
+            const children = Array.from(element.children).filter(elem => elem instanceof HTMLElement);
+            for (const child of children)
                 createRecursively(child, instance);
-            }
         }
-        for (const element of elements) {
-            if (!(element instanceof HTMLElement))
-                continue;
+        for (const element of elements)
             createRecursively(element);
-        }
-        return instances.filter((elem) => elem.parentElement === getWrapper().canvasMirror);
+        return instances.filter((elem) => elem.parentElement === (parent ?? getWrapper().canvasMirror));
     }
 }
 class UIElement extends Box {
