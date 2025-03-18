@@ -267,6 +267,8 @@ class Style {
 
 class HTMLDisplayElement {
     element: HTMLElement;
+    private _parentElement!: HTMLDisplayElement | HTMLElement;
+    private _children: Set<HTMLDisplayElement> = new Set();
 
     constructor(element: HTMLElement | string, parent?: HTMLDisplayElement) {
         if (typeof element === "string")
@@ -279,14 +281,34 @@ class HTMLDisplayElement {
         this.parentElement = parent ?? mirror;
     }
 
+    get children(): ReadonlySet<HTMLDisplayElement> {
+        return this._children;
+    }
+
+    appendChild(child: HTMLDisplayElement) {
+        this._children.add(child);
+        this.element.appendChild(child.element);
+
+        if (child._parentElement instanceof HTMLDisplayElement)
+            child._parentElement._children.delete(this);
+
+        child._parentElement = this;
+    }
+
+    get parentElement() {
+        return this._parentElement;
+    }
+
     set parentElement(value: HTMLDisplayElement | HTMLElement) {
         if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvasMirror)
             throw new TypeError("parentElement must be an HTMLDisplayElement or the canvasMirror itself.")
 
-        if (value instanceof HTMLDisplayElement)
-            value.element.appendChild(this.element);
+        if (value instanceof HTMLDisplayElement) 
+            value.appendChild(this);
         else
             value.appendChild(this.element);
+
+        this._parentElement = value;
     }
 
     get x() {
@@ -360,7 +382,7 @@ class HTMLDisplayElement {
             createRecursively(element);
         }
 
-        return instances;
+        return instances.filter((elem) => elem.parentElement === getWrapper().canvasMirror);
     }
 }
 

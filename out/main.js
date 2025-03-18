@@ -12,7 +12,7 @@ const created = HTMLDisplayElement.allFromHTML(`
         </div>
     `);
 console.log(created);
-const button = created.at(-1);
+const button = created.at(0)?.children; //!
 button.height = 50;
 button.width = 100;
 // const div = new HTMLDisplayElement("div");

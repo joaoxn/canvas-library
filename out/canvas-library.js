@@ -209,6 +209,8 @@ class Style {
 }
 class HTMLDisplayElement {
     element;
+    _parentElement;
+    _children = new Set();
     constructor(element, parent) {
         if (typeof element === "string")
             element = document.createElement(element);
@@ -218,13 +220,27 @@ class HTMLDisplayElement {
             throw new Error("Disabled functionality because canvasMirror is not available");
         this.parentElement = parent ?? mirror;
     }
+    get children() {
+        return this._children;
+    }
+    appendChild(child) {
+        this._children.add(child);
+        this.element.appendChild(child.element);
+        if (child._parentElement instanceof HTMLDisplayElement)
+            child._parentElement._children.delete(this);
+        child._parentElement = this;
+    }
+    get parentElement() {
+        return this._parentElement;
+    }
     set parentElement(value) {
         if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvasMirror)
             throw new TypeError("parentElement must be an HTMLDisplayElement or the canvasMirror itself.");
         if (value instanceof HTMLDisplayElement)
-            value.element.appendChild(this.element);
+            value.appendChild(this);
         else
             value.appendChild(this.element);
+        this._parentElement = value;
     }
     get x() {
         const leftStyle = this.element.computedStyleMap().get("left")?.toString();
@@ -286,7 +302,7 @@ class HTMLDisplayElement {
                 continue;
             createRecursively(element);
         }
-        return instances;
+        return instances.filter((elem) => elem.parentElement === getWrapper().canvasMirror);
     }
 }
 class UIElement extends Box {
