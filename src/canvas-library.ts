@@ -358,31 +358,41 @@ class HTMLDisplayElement {
         element.style.cssText += css ?? "";
         return new this(element, parent);
     }
+
+    /**
+     * Parses a string of HTML and creates an array of HTMLDisplayElement instances
+     * from the top-level elements in the HTML string. Each element is recursively
+     * processed to include its children.
+     *
+     * @param html - A string containing HTML markup to be parsed into elements.
+     * @param parent - An optional HTMLDisplayElement that will act as the parent
+     *                 for the created elements. If not provided, the elements will
+     *                 be appended to the canvas mirror.
+     * @returns An array of HTMLDisplayElement instances created from the HTML string.
+     *          Only elements whose parent is the provided parent parameter or the canvas mirror are included in the result.
+     */
+    
     static allFromHTML(html: string, parent?: HTMLDisplayElement): HTMLDisplayElement[] {
         const parser = new DOMParser();
         const document = parser.parseFromString(html, "text/html");
         const elementsCollection = document.body.children;
-        const elements: Element[] = Array.from(elementsCollection);
+        const elements: HTMLElement[] = Array.from(elementsCollection).filter(elem => elem instanceof HTMLElement);
         
         const instances: HTMLDisplayElement[] = [];
         
         function createRecursively(element: HTMLElement, parent?: HTMLDisplayElement) {
             const instance = new HTMLDisplayElement(element, parent);
             instances.push(instance);
-            const children = Array.from(element.children);
+            const children = Array.from(element.children).filter(elem => elem instanceof HTMLElement);
             
-            for (const child of children) {
-                if (!(child instanceof HTMLElement)) continue;
+            for (const child of children)
                 createRecursively(child, instance);
-            }
         }
         
-        for (const element of elements) {
-            if (!(element instanceof HTMLElement)) continue;
+        for (const element of elements)
             createRecursively(element);
-        }
 
-        return instances.filter((elem) => elem.parentElement === getWrapper().canvasMirror);
+        return instances.filter((elem) => elem.parentElement === (parent ?? getWrapper().canvasMirror));
     }
 }
 
