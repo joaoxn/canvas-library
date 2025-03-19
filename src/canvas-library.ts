@@ -265,22 +265,16 @@ class Style {
     textColor: string = "black";
 }
 
-class HTMLDisplayElement {
-    element: HTMLElement;
-    private _parentElement!: HTMLDisplayElement | HTMLElement;
+class ParentElement {
     private _childrenArray: HTMLDisplayElement[] = [];
     private _childrenIdMap: Map<string, HTMLDisplayElement> = new Map();
     private _childrenClassMap: Map<string, HTMLDisplayElement[]> = new Map();
+    private _childrenTagMap: Map<string, HTMLDisplayElement[]> = new Map();
 
-    constructor(element: HTMLElement | string, parent?: HTMLDisplayElement) {
-        if (typeof element === "string")
-            element = document.createElement(element);
-        this.element = element;
-
-        const mirror = getWrapper().canvasMirror;
-        if (!mirror)
-            throw new Error("Disabled functionality because canvasMirror is not available");
-        this.parentElement = parent ?? mirror;
+    constructor(children: HTMLDisplayElement[] = []) {
+        for (const element of children) {
+            this.appendChild(element);
+        }
     }
 
     get children(): ReadonlyArray<HTMLDisplayElement> {
@@ -295,40 +289,75 @@ class HTMLDisplayElement {
         return this._childrenClassMap.get(className) ?? [];
     }
 
-    private addChildReference(child: HTMLDisplayElement) {
+    getChildrenByTag(tag: string): ReadonlyArray<HTMLDisplayElement> {
+        return this._childrenTagMap.get(tag.toUpperCase()) ?? [];
+    }
+
+    protected appendChild(child: HTMLDisplayElement) {
         function putIfAbsent<K, V>(map: Map<K, V>, key: K, value: V) {
             if (!map.has(key))
                 map.set(key, value);
         }
-        
-        if (child.element.id) {
-            this._childrenIdMap.set(child.element.id, child);
-        }
-        
-        const classes = child.element.className.split(' ');
-        classes.forEach(className => {
-            if (!className) return;
-
-            if (!this._childrenClassMap.has(className))
-                this._childrenClassMap.set(className, []);
-
-            this._childrenClassMap.get(className)!.push(child);
-        })
 
         this._childrenArray.push(child);
+
+        if (child.element.id)
+            this._childrenIdMap.set(child.element.id, child);
+
+        if (child.element.className) {
+            putIfAbsent(this._childrenClassMap, child.element.className, []);
+            this._childrenClassMap.get(child.element.className)!.push(child);
+        }
+
+        if (child.element.tagName) {
+            putIfAbsent(this._childrenTagMap, child.element.tagName, []);
+            this._childrenTagMap.get(child.element.tagName)!.push(child);
+        }
+    }
+
+    protected removeChild(child: HTMLDisplayElement) {
+        removeFrom(this._childrenArray, child);
+
+        function removeFrom<T>(array: Array<T>, obj: T, fromIndex?: number) {
+            const index = array.indexOf(obj, fromIndex);
+            if (index === -1) return;
+            array.splice(index, 1);
+        }
+
+        if (child.element.id)
+            this._childrenIdMap.delete(child.element.id);
+
+        if (child.element.className) {
+            const children = this._childrenClassMap.get(child.element.className);
+            if (children)
+                removeFrom(children, child);
+        }
+    }
+}
+
+class HTMLDisplayElement extends ParentElement {
+    element: HTMLElement;
+    private _parentElement!: HTMLDisplayElement | HTMLElement;
+
+    constructor(element: HTMLElement | string, parent?: HTMLDisplayElement) {
+        super();
+
+        if (typeof element === "string")
+            element = document.createElement(element);
+        this.element = element;
+
+        const mirror = getWrapper().canvasMirror;
+        if (!mirror)
+            throw new Error("Disabled functionality because canvasMirror is not available");
+        this.parentElement = parent ?? mirror;
     }
 
     appendChild(child: HTMLDisplayElement) {
-        this.addChildReference(child);
-
+        super.appendChild(child);
         this.element.appendChild(child.element);
 
-        function removeFrom<T>(array: Array<T>, obj: T, fromIndex?: number) {
-            array.splice(array.indexOf(obj, fromIndex), 1);
-        }
-
         if (child._parentElement instanceof HTMLDisplayElement)
-            removeFrom(child._parentElement._childrenArray, this);
+            child.removeChild(this);
 
         child._parentElement = this;
     }
@@ -341,7 +370,7 @@ class HTMLDisplayElement {
         if (!(value instanceof HTMLDisplayElement) && value !== getWrapper().canvasMirror)
             throw new TypeError("parentElement must be an HTMLDisplayElement or the canvasMirror itself.")
 
-        if (value instanceof HTMLDisplayElement) 
+        if (value instanceof HTMLDisplayElement)
             value.appendChild(this);
         else
             value.appendChild(this.element);
@@ -350,8 +379,10 @@ class HTMLDisplayElement {
     }
 
     get x() {
-        const leftStyle = this.element.computedStyleMap().get("left")?.toString();
-        return Number(leftStyle?.replaceAll(/\D/g, ""));
+        const rect = this.element.getBoundingClientRect();
+        const parentRect = this.element.parentElement?.getBoundingClientRect();
+
+        return rect.x - (parentRect?.x ?? 0);
     }
 
     set x(value: number) {
@@ -360,8 +391,10 @@ class HTMLDisplayElement {
     }
 
     get y() {
-        const topStyle = this.element.computedStyleMap().get("top")?.toString();
-        return Number(topStyle?.replaceAll(/\D/g, ""));
+        const rect = this.element.getBoundingClientRect();
+        const parentRect = this.element.parentElement?.getBoundingClientRect();
+
+        return rect.y - (parentRect?.y ?? 0);
     }
 
     set y(value: number) {
@@ -370,8 +403,8 @@ class HTMLDisplayElement {
     }
 
     get width() {
-        const widthStyle = this.element.computedStyleMap().get("width")?.toString();
-        return Number(widthStyle?.replaceAll(/\D/g, ""));
+        const rect = this.element.getBoundingClientRect();
+        return rect.width;
     }
 
     set width(value: number) {
@@ -379,8 +412,8 @@ class HTMLDisplayElement {
     }
 
     get height() {
-        const heightStyle = this.element.computedStyleMap().get("height")?.toString();
-        return Number(heightStyle?.replaceAll(/\D/g, ""));
+        const rect = this.element.getBoundingClientRect();
+        return rect.height;
     }
 
     set height(value: number) {
@@ -409,31 +442,34 @@ class HTMLDisplayElement {
      * @returns An array of HTMLDisplayElement instances created from the HTML string.
      *          Only elements whose parent is the provided parent parameter or the canvas mirror are included in the result.
      */
-    
-    static allFromHTML(html: string, parent?: HTMLDisplayElement): HTMLDisplayElement[] {
+
+    static allFromHTML(html: string, parent?: HTMLDisplayElement): ParentElement {
         const parser = new DOMParser();
         const document = parser.parseFromString(html, "text/html");
         const elementsCollection = document.body.children;
-        const elements: HTMLElement[] = Array.from(elementsCollection).filter(elem => elem instanceof HTMLElement);
-        
+        const elements: HTMLElement[] = Array.from(elementsCollection)
+            .filter(elem => elem instanceof HTMLElement);
+
         const instances: HTMLDisplayElement[] = [];
-        
+
         function createRecursively(element: HTMLElement, parent?: HTMLDisplayElement) {
             const instance = new HTMLDisplayElement(element, parent);
             instances.push(instance);
             const children = Array.from(element.children).filter(elem => elem instanceof HTMLElement);
-            
+
             for (const child of children)
                 createRecursively(child, instance);
         }
-        
+
         for (const element of elements)
             createRecursively(element);
 
-        return instances.filter((elem) => elem.parentElement === (parent ?? getWrapper().canvasMirror));
+        const topInstances = instances.filter(elem =>
+            elem.parentElement === (parent ?? getWrapper().canvasMirror)
+        );
+        return new ParentElement(topInstances);
     }
 }
-
 
 class UIElement extends Box {
     style: Style;

@@ -1,5 +1,5 @@
-import { 
-    init, getWrapper, Shape, Vector, Box, Style, UIElement, HTMLDisplayElement, Movable 
+import {
+    init, getWrapper, Shape, Vector, Box, Style, UIElement, HTMLDisplayElement, Movable
 } from "./canvas-library.js";
 
 init("#game", false, true);
@@ -7,69 +7,75 @@ init("#game", false, true);
 const canvas = getWrapper().canvas;
 const ctx = getWrapper().ctx;
 const GRAVITY = 0.6;
-
 let frozen = false;
 
-const created = HTMLDisplayElement.allFromHTML(`
+let score = 0;
+
+const scoreDisplay = HTMLDisplayElement.allFromHTML(`
+        <div id="display" style="width: fit-content;">
+            <h2 style="width: fit-content;">Score: 000000</h2>
+        </div>
+    `).children[0];
+
+console.log(scoreDisplay.element.getBoundingClientRect());
+
+scoreDisplay.x = canvas.width - scoreDisplay.width - 20;
+scoreDisplay.element.style.cssText += `
+    padding: 10px;
+    background-color: #000000ff;
+    border-bottom-left-radius: 10px;
+`
+
+// scoreDisplay.y = 0;
+
+const scoreText = scoreDisplay.children[0];
+
+function createEndScreen() {
+    // Dynamically create from HTML code
+    const created = HTMLDisplayElement.allFromHTML(`
         <div>
             <h1>Game Over</h1>
-            <h2>Your Score: 0</h2>
-            <button id="restart" style="margin-top: 50px; background-color: black;">Restart</button>
+            <h2>Failed loading your score :(</h2>
+            <h3>Press R to replay</h3>
+            <button id="restart" style="margin-top: 50px; background-color: #113;">Restart</button>
         </div>
     `)
 
-const div = created.at(0)!;
+    const div = created.getChildrenByTag('div')[0];
+    console.log(created);
 
-// Set elements' position and size relative to the canvas
-div.width = canvas.width;
-div.height = canvas.height;
+    // Set elements' position and size relative to the canvas
+    div.width = canvas.width;
+    div.height = canvas.height;
 
-// Set elements' style based on CSS properties
-div.element.style.cssText += `
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center;
-`
+    // Set elements' style based on CSS properties
+    div.element.style.cssText += `
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center;
+        background-color: #00000088;
+    `
+    document.addEventListener('keyup', (event) => {
+        if (event.key.toLowerCase() === 'r')
+            location.reload();
+    });
 
-console.log(created);
-const button = created.at(0)?.getChildById("restart")!;
-button.width = 100;
-button.height = 50;
+    div.getChildrenByTag('h2')[0].element.textContent = `Your score: ${score}`;
 
-// const div = new HTMLDisplayElement("div");
-// div.x = 0;
-// div.y = 0;
-// div.width = canvas.width;
-// div.height = canvas.height;
-// div.element.style.cssText += `
-//     display: flex;
-//     flex-direction: column;
-//     align-items: center;
-//     justify-content: center;
-// `;
+    const button = div.getChildById("restart")!;
+    button.width = 100;
+    button.height = 50;
+    button.element.addEventListener('click', () => location.reload());
+}
 
-// const gameover = new HTMLDisplayElement("h1", div);
-// gameover.element.innerText = "Game Over";
 
-// const score = new HTMLDisplayElement("h2", div);
-// score.element.innerText = "0 Points";
-
-// const restart = new HTMLDisplayElement("button", div);
-// restart.width = 100;
-// restart.height = 50;
-// restart.element.style.marginTop = "50px";
 
 UIElement.addListeners();
 
-const player = new Movable(25, (canvas.height - 30)*30/100, 50, 30);
+const player = new Movable(25, (canvas.height - 30) * 30 / 100, 50, 30);
 player.acceleration.y = GRAVITY;
 player.deleteIfOutOfBounds = false;
-
-const floor = new Movable(0, canvas.height-10, canvas.width, 10);
-floor.clickCallback = () => {
-    console.log("Clicked!")
-}
 
 player.keydownCallback = (event) => {
     const jumpKeys = [' ', 'ArrowUp', 'W'];
@@ -80,6 +86,13 @@ player.keydownCallback = (event) => {
 
 player.collisionCallback = (player, other) => {
     frozen = true;
+    createEndScreen();
+}
+
+
+const floor = new Movable(0, canvas.height - 10, canvas.width, 10);
+floor.clickCallback = () => {
+    console.log("Clicked!")
 }
 
 class Pipe extends Movable {
@@ -109,19 +122,18 @@ let i = 0;
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    
+
     UIElement.drawAll();
     if (!frozen) {
+        if (i % 5 == 0) score = i;
+        scoreText.element.textContent = "Score: "+ score.toString().padStart(6, '0');
+        
         Movable.tickAll();
         if (i % 60 == 0) {
             const gapHeight = 150;
             let yGap = Math.random() * (canvas.height - gapHeight + 1)
             newPipes(gapHeight, yGap);
         }
-    }
-
-    if (frozen) {
-        // TODO Game Over
     }
 
     i++;
